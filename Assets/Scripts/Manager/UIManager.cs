@@ -28,7 +28,7 @@ public class UIManager : ManagerBase
         }
     }
 
-    public void BroadcastEvent<T>(T InEventType, object[] InEvent) where T : System.Type
+    public void BroadcastEvent(System.Type InEventType, object[] InEvent)
     {
         List<UIEventData> OutEventDataList;
         if (EventMap.TryGetValue(InEventType, out OutEventDataList))
