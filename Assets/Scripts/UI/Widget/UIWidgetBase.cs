@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class UIWidgetBase : MonoBehaviour
@@ -52,8 +53,9 @@ public class UIWidgetBase : MonoBehaviour
     protected void SubscribeEvents()
     {
         System.Type ThisType = GetType();
+        System.Type EventTargetType = null;
 
-        List<MethodInfo> EventMethods = new List<MethodInfo>();
+        Dictionary<MethodInfo, UIEventData> EventsHandlerMap = new Dictionary<MethodInfo, UIEventData>();
 
         var MethodInfos = ThisType.GetMethods();
         foreach(var Info in MethodInfos)
@@ -61,11 +63,33 @@ public class UIWidgetBase : MonoBehaviour
             string MethodName = Info.Name;
             if(MethodName.Contains("Event_"))
             {
-                EventMethods.Add(Info);
+                ParameterInfo[] Parameters = Info.GetParameters();
+                if(Parameters.Length > 0)
+                {
+                    ParameterInfo Parameter = Parameters[0];
+                    if (Parameter != null)
+                    {
+                        if(Parameter.GetType().IsStruct())
+                        {
+                            EventTargetType = Parameter.GetType();
+                        }
+                    }
+
+                    UIEventData EventData = new UIEventData()
+                    {
+                        Method = Info,
+                        Owner = this
+                    };
+                    EventsHandlerMap.Add(Info, EventData);
+                }
+               
             }
         }
 
-        var UIManager = ManagerHelper.Get<UIManager>();
-        UIManager.SubscribeEvents(ThisType, EventMethods);
+        if(EventsHandlerMap.Count > 0)
+        {
+            var UIManager = ManagerHelper.Get<UIManager>();
+            UIManager.SubscribeEvents(EventTargetType, EventsHandlerMap);
+        }
     }
 }

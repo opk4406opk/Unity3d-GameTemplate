@@ -1,23 +1,42 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using Unity.VisualScripting;
 using UnityEngine;
+
+public struct UIEventData
+{
+    public object Owner;
+    public MethodInfo Method;
+}
 
 public class UIManager : ManagerBase
 {
-    private Dictionary<System.Type, List<MethodInfo>> Events = new Dictionary<System.Type, List<MethodInfo>>();
+    private Dictionary<System.Type, List<UIEventData>> EventMap = new Dictionary<System.Type, List<UIEventData>>();
 
     public override void Initialize()
     {
-        Events.Clear();
+        EventMap.Clear();
     }
 
-    public void SubscribeEvents(System.Type InType, List<MethodInfo> InEventMethods)
+    public void SubscribeEvents(System.Type InType, Dictionary<MethodInfo, UIEventData> InEventMethodHandler)
     {
-        List<MethodInfo> OutEventMetohds;
-        if(Events.TryGetValue( InType, out OutEventMetohds))
+        List<UIEventData> OutEventDataList;
+        if(EventMap.TryGetValue(InType, out OutEventDataList))
         {
-            OutEventMetohds.AddRange(InEventMethods);
+            OutEventDataList.AddRange(InEventMethodHandler.Values);
+        }
+    }
+
+    public void BroadcastEvent<T>(T InEventType, object[] InEvent) where T : System.Type
+    {
+        List<UIEventData> OutEventDataList;
+        if (EventMap.TryGetValue(InEventType, out OutEventDataList))
+        {
+            foreach(var EventData in OutEventDataList)
+            {
+                EventData.Method.Invoke(EventData.Owner, InEvent);
+            }
         }
     }
 
@@ -39,7 +58,7 @@ public class UIManager : ManagerBase
 
     public override void Release()
     {
-        Events.Clear();
+        EventMap.Clear();
     }
 
     public override void UpdateProcess(float InDeltaTime)
